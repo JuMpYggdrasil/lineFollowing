@@ -2,7 +2,8 @@
 #include <Ultrasonic.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
-//version 16.0.5
+//simple maxze solver
+//version 1.0.0
 
 #define lineSensor0 A0//most right,active low(0:white,1:black/nothing)
 #define lineSensor1 A1
