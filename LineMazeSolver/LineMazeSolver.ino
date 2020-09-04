@@ -23,7 +23,7 @@
 
 #define RightSpeed 140//135
 #define LeftSpeed 120//115
-#define drivePastDelay 45//40-65
+#define drivePastDelay 35//40-65
 
 #define drivePastDelayRatio 1.2
 #define RightMediumSpeed RightSpeed-StepSpeed
