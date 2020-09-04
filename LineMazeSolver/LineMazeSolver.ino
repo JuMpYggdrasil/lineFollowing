@@ -4,6 +4,7 @@
 #include <LiquidCrystal_I2C.h>
 //simple maxze solver
 //version 1.0.0
+//hi
 
 #define lineSensor0 A0//most right,active low(0:white,1:black/nothing)
 #define lineSensor1 A1
