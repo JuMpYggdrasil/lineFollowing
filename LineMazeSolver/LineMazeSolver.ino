@@ -1,10 +1,9 @@
-#include <AFMotor.h>
-#include <Ultrasonic.h>
+#include <AFMotor.h>//1.0.1 https://www.arduinolibraries.info/libraries/adafruit-motor-shield-library
+#include <Ultrasonic.h>//3.0.0 https://www.arduinolibraries.info/libraries/ultrasonic
 #include <Wire.h>
-#include <LiquidCrystal_I2C.h>
+#include <LiquidCrystal_I2C.h>//1.1.2 https://www.arduinolibraries.info/libraries/liquid-crystal-i2-c
 //simple maxze solver
-//version 1.0.0
-//hi
+//version 1.0.1
 
 #define lineSensor0 A0//most right,active low(0:white,1:black/nothing)
 #define lineSensor1 A1
@@ -15,6 +14,7 @@
 #define allDarkCountStop 55
 #define pauseMoveDelay 480
 #define longRotate 600
+#define mediumRotate 500
 #define shortRotate 400
 #define StepSpeed 20
 
@@ -954,11 +954,13 @@ int straightCheck() {
 void turnRight() {
   pauseMove();
   delay(pauseMoveDelay);
+  rotateRight();
   RightMotor.setSpeed(RightRotateSpeed);
   LeftMotor.setSpeed(LeftRotateSpeed);
-  rotateRight();
-  if ((lineSensor_val == 1) || (lineSensor_val == 3) || (lineSensor_val == 2)) {
+  if ((lineSensor_val == 1) || (lineSensor_val == 3)) {
     delay(longRotate);
+  }else if ((lineSensor_val == 2) || (lineSensor_val == 6)) {
+    delay(mediumRotate);
   } else {
     delay(shortRotate);
   }
@@ -993,8 +995,10 @@ void turnLeft() {
   rotateLeft();
   RightMotor.setSpeed(RightRotateSpeed);
   LeftMotor.setSpeed(LeftRotateSpeed);
-  if ((lineSensor_val == 16) || (lineSensor_val == 24) || (lineSensor_val == 8)) {
+  if ((lineSensor_val == 16) || (lineSensor_val == 24)) {
     delay(longRotate);
+  }else if ((lineSensor_val == 8 || (lineSensor_val == 12)) {
+    delay(mediumRotate);
   } else {
     delay(shortRotate);
   }
