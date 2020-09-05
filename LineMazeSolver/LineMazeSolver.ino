@@ -1,6 +1,6 @@
 #include <AFMotor.h>//1.0.1 https://www.arduinolibraries.info/libraries/adafruit-motor-shield-library
 #include <Ultrasonic.h>//3.0.0 https://www.arduinolibraries.info/libraries/ultrasonic
-#include <Wire.h>
+#include <Wire.h>//default in IDE
 #include <LiquidCrystal_I2C.h>//1.1.2 https://www.arduinolibraries.info/libraries/liquid-crystal-i2-c
 //simple maxze solver
 //version 1.0.1
@@ -959,7 +959,7 @@ void turnRight() {
   LeftMotor.setSpeed(LeftRotateSpeed);
   if ((lineSensor_val == 1) || (lineSensor_val == 3)) {
     delay(longRotate);
-  }else if ((lineSensor_val == 2) || (lineSensor_val == 6)) {
+  } else if ((lineSensor_val == 2) || (lineSensor_val == 6)) {
     delay(mediumRotate);
   } else {
     delay(shortRotate);
@@ -997,7 +997,7 @@ void turnLeft() {
   LeftMotor.setSpeed(LeftRotateSpeed);
   if ((lineSensor_val == 16) || (lineSensor_val == 24)) {
     delay(longRotate);
-  }else if ((lineSensor_val == 8 || (lineSensor_val == 12)) {
+  } else if ((lineSensor_val == 8) || (lineSensor_val == 12)) {
     delay(mediumRotate);
   } else {
     delay(shortRotate);
