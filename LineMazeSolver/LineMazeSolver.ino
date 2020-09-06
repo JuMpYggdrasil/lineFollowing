@@ -60,6 +60,13 @@ int blackLineCnt = 0;
 int checkResult;
 
 int disp_state = 0;
+enum algorithm_def { leftHandRule, rightHandRule};
+algorithm_def selectAlgorithm = leftHandRule;
+
+unsigned long startMillis = 0;
+unsigned long mazeSolveMillis = 0; 
+unsigned long simplifyPathMillis = 0;
+unsigned long runBackMillis = 0;
 
 //prototype declaration
 void pauseMove(void);
@@ -125,8 +132,10 @@ void setup() {
         lcd.print(" test FWD");
       } else  if (lineSensor_val == 1) {
         lcd.print(" test ROT");
+      } else  if (lineSensor_val == 2) {
+        lcd.print(" R algori");
       } else {
-        lcd.print("         ");
+        lcd.print(" L algori");
       }
       lcd.setCursor(0, 1);
       lcd.print("R ");
@@ -146,6 +155,8 @@ void setup() {
     while (true) {}
   } else if (lineSensor_val == 3) {
     getPassSectionTime();
+  } else if (lineSensor_val == 2) {
+    selectAlgorithm=rightHandRule;
   } else if (lineSensor_val == 16) {
     RightMotor.setSpeed(RightSpeed);
     LeftMotor.setSpeed(LeftSpeed);
@@ -189,20 +200,34 @@ void getPassSectionTime() {
   }
 }
 void loop() {
+  startMillis=millis();
   MazeSolving();//0
+  mazeSolveMillis=millis();
   //path = "LBLBLLBLL";//1 ->RSL
   //path = "LBLLBLL";//2 ->SSL
   //path = "LLBLL";//3 ->LSL
   //path = "LL";//4 ->LL
   //path = "SSLBLBLBLLBLL";//5 ->R
   SimplifyPath();// Simplify the learned path.
+  simplifyPathMillis=millis();
   RunningBack();
+  runBackMillis=millis();
   //FastestRouteRunning();
   waitHandShake();
   path = "";
 }
 void waitHandShake(void) {
   lcd.backlight();
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print(path);
+  lcd.setCursor(9, 0);
+  lcd.print((mazeSolveMillis-startMillis)/1000);
+  lcd.setCursor(0, 1);
+  lcd.print(path_reverse);
+  lcd.setCursor(9, 1);
+  lcd.print((runBackMillis-simplifyPathMillis)/1000);
+
   while (ultrasonic.read() > 12) {//wait hand in
     delay(1);
   }
@@ -215,7 +240,7 @@ void MazeSolving()
 {
   Serial.println(F("MazeSolving"));
   while (true) {
-    movement_task();
+    mazeSolve_task();
     //Sensor_task();
     //communication_task();
     if (breakFlag) {
@@ -265,10 +290,19 @@ void SimplifyPath()
 {
   int Xindex = path.indexOf('X');
   path = path.substring(0, Xindex);
+
+  lcd.backlight();
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print(path);
+  lcd.setCursor(0, 1);
+  lcd.print(F("I'm thinking!!"));
+  delay(5000);
+
   Serial.println(F("SimplifyPath"));
   Serial.print(F(" Search path: "));//LBLBLLBSLLSRBLLSSLBRLBLL
   Serial.println(path);
-  do {
+  do {//for leftHandRule
     path.replace("LBR", "B");
     path.replace("LBS", "R");
     path.replace("RBL", "B");
@@ -276,6 +310,17 @@ void SimplifyPath()
     path.replace("SBS", "B");
     path.replace("LBL", "S");
     isOptimum = !((path.indexOf("LBR") >= 0) || (path.indexOf("LBS") >= 0) || (path.indexOf("RBL") >= 0) || (path.indexOf("SBL") >= 0) || (path.indexOf("SBS") >= 0) || (path.indexOf("LBL") >= 0));
+    Serial.print(" ");
+    Serial.println(path);
+  } while (!isOptimum);
+  do {//for rightHandRule
+    path.replace("RBL", "B");
+    path.replace("RBS", "L");
+    path.replace("LBR", "B");
+    path.replace("SBR", "L");
+    path.replace("SBS", "B");
+    path.replace("RBR", "S");
+    isOptimum = !((path.indexOf("RBL") >= 0) || (path.indexOf("RBS") >= 0) || (path.indexOf("LBR") >= 0) || (path.indexOf("SBR") >= 0) || (path.indexOf("SBS") >= 0) || (path.indexOf("RBR") >= 0));
     Serial.print(" ");
     Serial.println(path);
   } while (!isOptimum);
@@ -301,13 +346,16 @@ void SimplifyPath()
   lcd.setCursor(9, 1);
   lcd.print(" :");
   lcd.print(path_index);
+
+  delay(5000);
+  lcd.noBacklight();
 } // end SimplifyPath
 
 void FastestRouteRunning()
 {
   Serial.println(F("FastestRouteRunning"));
   while (true) {
-    //movement_task();
+    //mazeSolve_task();
     //Sensor_task();
     //communication_task();
     if (breakFlag) {
@@ -317,11 +365,11 @@ void FastestRouteRunning()
   }
 }
 
-void movement_task() {
+void mazeSolve_task() {
   lineSensor_val_previous = lineSensor_val;
   lineSensor_val = sensorReading();
   decisionMaking(lineSensor_val);
-  carAction(lineSensor_val);
+  mazeSolve(lineSensor_val);
 }
 
 void Sensor_task() {
@@ -492,7 +540,7 @@ void decisionMaking(int sensorValue) {
 }
 
 
-void carAction(int sensorValue) {
+void mazeSolve(int sensorValue) {
   switch (sensorValue) {
     case 0: //line detected by none = all white
       if ((lineSensor_val_beforeWhite == 2) || (lineSensor_val_beforeWhite == 6) || (lineSensor_val_beforeWhite == 4) || (lineSensor_val_beforeWhite == 12) || (lineSensor_val_beforeWhite == 8)) {
@@ -573,8 +621,13 @@ void carAction(int sensorValue) {
       if ((lineSensor_val == 28) || (lineSensor_val == 30)) {
         checkResult = straightCheck();
         if (checkResult > 0) {//can go straight
-          path += 'L';
-          turnLeft();
+          if(selectAlgorithm==leftHandRule){
+            path += 'L';
+            turnLeft();
+          }else{
+            path += 'S';
+            moveForward();
+          }
         } else {
           turnLeft();
         }
@@ -598,8 +651,13 @@ void carAction(int sensorValue) {
       if ((lineSensor_val == 7) || (lineSensor_val == 15)) {
         checkResult = straightCheck();
         if (checkResult > 0) {//can go straight
-          path += 'S';
-          moveForward();
+          if(selectAlgorithm==leftHandRule){
+            path += 'S';
+            moveForward();
+          }else{
+            path += 'R';
+            turnRight();
+          }
         } else {
           turnRight();
         }
@@ -610,11 +668,21 @@ void carAction(int sensorValue) {
       //pauseMove();
       checkResult = straightCheck();
       if (checkResult > 0) {//can go straight ,4 junction
-        turnLeft();
-        path += 'L';
+        if(selectAlgorithm==leftHandRule){
+          path += 'L';
+          turnLeft();
+        }else{
+          path += 'R';
+          turnRight();
+        }
       } else if (checkResult == 0) {//can't go straight ,3 junction
-        turnLeft();
-        path += 'L';
+        if(selectAlgorithm==leftHandRule){
+          path += 'L';
+          turnLeft();
+        }else{
+          path += 'R';
+          turnRight();
+        }
       } else {
         path += 'X';
         pauseMove();
@@ -624,14 +692,6 @@ void carAction(int sensorValue) {
         turnAround();
         pauseMove();
         breakFlag = true;
-        lcd.backlight();
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print(path);
-        lcd.setCursor(0, 1);
-        lcd.print(F("I'm thinking!!"));
-        delay(10000);
-        lcd.noBacklight();
       }
       break;
     case 9:// 01001
@@ -643,13 +703,17 @@ void carAction(int sensorValue) {
     case 19://10011
     case 25://11001
     case 20://10100
-    case 5://00101
+    case 5:// 00101
       moveForward();
       RightMotor.setSpeed(RightSpeed / 2);
       LeftMotor.setSpeed(LeftSpeed / 2);
       break;
-    case 17:
-      rotateRight();
+    case 17://10001
+      if(selectAlgorithm==leftHandRule){
+        rotateRight();
+      }else{
+        rotateLeft();
+      }
       RightMotor.setSpeed(RightSpeed);
       LeftMotor.setSpeed(LeftSpeed);
       break;
@@ -849,7 +913,7 @@ void runBack(void) {
       RightMotor.setSpeed(RightSpeed / 2);
       LeftMotor.setSpeed(LeftSpeed / 2);
       break;
-    case 17:
+    case 17://10001
       rotateRight();
       RightMotor.setSpeed(RightSpeed);
       LeftMotor.setSpeed(LeftSpeed);
