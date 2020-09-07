@@ -171,7 +171,7 @@ void setup() {
   lcd.clear();
   lcd.setCursor(0, 0);
 
-  ultrasonic.setTimeout(440UL);//1000UL=1ms
+  ultrasonic.setTimeout(500UL);//1000UL=1ms
   Serial.println(F(" go"));
   delay(1000);
 }
@@ -241,6 +241,7 @@ void waitHandShake(void) {
     delay(1);
   }
   lcd.noBacklight();
+  ultrasonic.setTimeout(500UL);
 }
 void MazeSolving()
 {
@@ -380,10 +381,10 @@ void mazeSolve_task() {
 
 void Sensor_task() {
   sensorCurrentMillis = millis();
-  if (sensorCurrentMillis - sensorPreviousMillis >= 200) {
+  if (sensorCurrentMillis - sensorPreviousMillis >= 100) {
     sensorPreviousMillis = sensorCurrentMillis;
 
-    while(ultrasonic.read() <6){//less than 7 cm
+    while(ultrasonic.read() <8){//less than 7 cm
       pauseMove();
     }
   }
