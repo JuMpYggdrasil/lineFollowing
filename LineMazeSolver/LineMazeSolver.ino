@@ -68,6 +68,9 @@ unsigned long mazeSolveMillis = 0;
 unsigned long simplifyPathMillis = 0;
 unsigned long runBackMillis = 0;
 
+unsigned long sensorCurrentMillis = 0;
+unsigned long sensorPreviousMillis = 0;
+
 //prototype declaration
 void pauseMove(void);
 void moveForward(void);
@@ -167,6 +170,8 @@ void setup() {
   lcd.noBacklight();
   lcd.clear();
   lcd.setCursor(0, 0);
+
+  ultrasonic.setTimeout(440UL);//1000UL=1ms
   Serial.println(F(" go"));
   delay(1000);
 }
@@ -217,6 +222,7 @@ void loop() {
   path = "";
 }
 void waitHandShake(void) {
+  ultrasonic.setTimeout(40000UL);
   lcd.backlight();
   lcd.clear();
   lcd.setCursor(0, 0);
@@ -241,7 +247,7 @@ void MazeSolving()
   Serial.println(F("MazeSolving"));
   while (true) {
     mazeSolve_task();
-    //Sensor_task();
+    Sensor_task();
     //communication_task();
     if (breakFlag) {
       breakFlag = false;
@@ -254,7 +260,7 @@ void RunningBack()
   Serial.println(F("RunningBack"));
   while (true) {
     runBack_task();
-    //Sensor_task();
+    Sensor_task();
     //communication_task();
     if (breakFlag) {
       breakFlag = false;
@@ -373,7 +379,14 @@ void mazeSolve_task() {
 }
 
 void Sensor_task() {
+  sensorCurrentMillis = millis();
+  if (sensorCurrentMillis - sensorPreviousMillis >= 200) {
+    sensorPreviousMillis = sensorCurrentMillis;
 
+    while(ultrasonic.read() <6){//less than 7 cm
+      pauseMove();
+    }
+  }
 }
 void runBack_task() {
   lineSensor_val_previous = lineSensor_val;
